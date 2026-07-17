@@ -5,11 +5,11 @@ import aiofiles
 import logging
 from datetime import datetime
 
-from app.database import engine, get_db
-from app.models import Base, Job
-from app.crud import create_job
-from app.schemas import UploadResponse, JobResponse
-from app.config import UPLOAD_DIR
+from common.database import engine, get_db
+from common.models import Base, Job
+from api.app.crud import create_job
+from common.schemas import UploadResponse, JobResponse
+from api.app.config import UPLOAD_DIR
 
 
 # Create database tables

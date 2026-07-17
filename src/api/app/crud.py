@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import Job
+from common.models import Job
 
 
 def create_job(
