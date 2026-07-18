@@ -17,7 +17,7 @@ def create_job(
     job = Job(
         original_filename=original_filename,
         stored_filename=stored_filename,
-        status="queued"
+        status="pending"
     )
 
     db.add(job)

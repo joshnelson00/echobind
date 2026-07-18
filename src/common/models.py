@@ -7,7 +7,7 @@ from common.database import Base
 class Job(Base):
     __tablename__ = "jobs"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
     # Original uploaded filename
     original_filename = Column(String, nullable=False)
@@ -15,14 +15,20 @@ class Job(Base):
     # Filename stored on disk
     stored_filename = Column(String, nullable=False)
 
-    # queued | processing | completed | failed
-    status = Column(String, nullable=False, default="queued")
+    # pending | processing | completed | failed
+    status = Column(String, nullable=False, default="pending")
 
     # Which worker claimed this job
     claimed_by = Column(String, nullable=True)
 
     # Last heartbeat from the worker
     heartbeat_at = Column(DateTime, nullable=True)
+
+    attempts = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
 
     # Processing timestamps
     created_at = Column(
@@ -41,10 +47,8 @@ class Job(Base):
         nullable=True
     )
 
-    # Output files
     transcript_path = Column(String, nullable=True)
 
     summary_path = Column(String, nullable=True)
 
-    # Optional error message if processing fails
     error_message = Column(Text, nullable=True)

@@ -1,47 +1,33 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
+# Loads .env into the process environment. Safe to call even if .env
+# doesn't exist (e.g. in prod where real env vars are set another way).
+load_dotenv()
 
-# Base project directory
-BASE_DIR = Path(__file__).resolve().parent.parent
+# === Storage ===
+STORAGE_ROOT = Path(os.getenv("ECHOBIND_STORAGE_ROOT", "./src/storage"))
+UPLOAD_DIR = STORAGE_ROOT / "uploads"
+TRANSCRIPTS_DIR = STORAGE_ROOT / "transcripts"
+SUMMARIES_DIR = STORAGE_ROOT / "summaries"
 
+# Ensure these exist at import time so callers never have to check
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+SUMMARIES_DIR.mkdir(parents=True, exist_ok=True)
 
-# Storage directories
-UPLOAD_DIR = BASE_DIR / "uploads"
-TRANSCRIPT_DIR = BASE_DIR / "transcripts"
-SUMMARY_DIR = BASE_DIR / "summaries"
+# === Database ===
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{STORAGE_ROOT / 'jobs.db'}")
 
+# === Ollama ===
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 
-# Database
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///jobs.db"
-)
+# === Whisper ===
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
 
-
-# Worker configuration
-WORKER_NAME = os.getenv(
-    "WORKER_NAME",
-    "local-worker"
-)
-
-HEARTBEAT_INTERVAL = int(
-    os.getenv(
-        "HEARTBEAT_INTERVAL",
-        "30"
-    )
-)
-
-
-# Create directories if they don't exist
-UPLOAD_DIR.mkdir(
-    exist_ok=True
-)
-
-TRANSCRIPT_DIR.mkdir(
-    exist_ok=True
-)
-
-SUMMARY_DIR.mkdir(
-    exist_ok=True
-)
+# === API ===
+API_HOST = os.getenv("API_HOST", "0.0.0.0")
+API_PORT = int(os.getenv("API_PORT", "8000"))
