@@ -8,7 +8,7 @@ from common.database import SessionLocal
 from common.models import Job
 from api.app.config import UPLOAD_DIR, TRANSCRIPTS_DIR
 from worker.transcriber import transcribe
-
+from worker.summarizer import load_transcript, build_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def process_job(db, job):
     logger.info(f"Processing {job.stored_filename}")
  
     audio_path = UPLOAD_DIR / job.stored_filename
- 
+    # Whisper Transcription
     result = transcribe(str(audio_path))
  
     base_name = job.stored_filename.rsplit(".", 1)[0]
@@ -89,6 +89,11 @@ def process_job(db, job):
  
     job.transcript_path = str(transcript_path)
     db.commit()
+
+    transcript = load_transcript(job.transcript_path)
+    llm_result = build_prompt(transcript)
+    print(llm_result)
+    
 
 def worker_loop():
     logger.info(f"Worker started: {WORKER_ID}")
