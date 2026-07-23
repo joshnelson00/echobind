@@ -22,7 +22,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{STORAGE_ROOT / 'jobs.db'}"
 
 # === Ollama ===
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 
 # === Whisper ===
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
@@ -31,3 +31,6 @@ WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
 # === API ===
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
+
+# === OBSIDIAN ===
+VAULT_PATH = Path("/home/joshnelson/Documents/obsidian-vault/joshnelson-vault")
