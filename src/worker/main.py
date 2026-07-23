@@ -3,18 +3,21 @@ import logging
 import socket
 import json
 from datetime import datetime
+import asyncio
 
 from common.database import SessionLocal
 from common.models import Job
-from api.app.config import UPLOAD_DIR, TRANSCRIPTS_DIR
+from api.app.config import UPLOAD_DIR, TRANSCRIPTS_DIR, VAULT_PATH
 from worker.transcriber import transcribe
-from worker.summarizer import load_transcript, build_prompt
+from worker.summarizer import load_transcript, summarize, write_to_obsidian
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 WORKER_ID = socket.gethostname()
 POLL_INTERVAL = 5
+
 
 def get_pending_job(db):
     """
@@ -72,27 +75,49 @@ def fail_job(db, job, error):
 
 
 def process_job(db, job):
-    """
-    audio -> whisper -> transcript + timestamp/dead-space analysis
-    (Ollama summarization step comes later)
-    """
     logger.info(f"Processing {job.stored_filename}")
- 
     audio_path = UPLOAD_DIR / job.stored_filename
-    # Whisper Transcription
-    result = transcribe(str(audio_path))
- 
     base_name = job.stored_filename.rsplit(".", 1)[0]
- 
+
+    # === Whisper transcription ===
+    transcribe_start = time.time()
+    result = transcribe(str(audio_path))
+    transcribe_duration = time.time() - transcribe_start
+
     transcript_path = TRANSCRIPTS_DIR / f"{base_name}.txt"
     transcript_path.write_text(result["text"])
- 
     job.transcript_path = str(transcript_path)
     db.commit()
 
+    logger.info(
+        f"Transcription done in {transcribe_duration:.2f}s "
+        f"({len(result['text'])} chars) -> {transcript_path}"
+    )
+
+    # === Ollama summarization ===
+    summarize_start = time.time()
     transcript = load_transcript(job.transcript_path)
-    llm_result = build_prompt(transcript)
-    print(llm_result)
+    summary = asyncio.run(summarize(transcript))
+    summarize_duration = time.time() - summarize_start
+
+    note_path = write_to_obsidian(job.stored_filename, summary, VAULT_PATH)
+    job.summary_path = str(note_path)
+    db.commit()
+
+    logger.info(
+        f"Summarization done in {summarize_duration:.2f}s "
+        f"({len(summary)} chars) -> {note_path}"
+    )
+
+    # === Write to Obsidian vault ===
+    logger.info(f"Wrote note to Obsidian vault: {note_path}")
+
+    total_duration = transcribe_duration + summarize_duration
+    logger.info(
+        f"Job {job.id} total pipeline time: {total_duration:.2f}s "
+        f"(transcribe {transcribe_duration:.2f}s, summarize {summarize_duration:.2f}s)"
+    )
+
     
 
 def worker_loop():
