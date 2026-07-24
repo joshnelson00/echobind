@@ -1,0 +1,6 @@
+aiofiles>=25.1.0
+fastapi[standard]>=0.139.0
+psycopg2-binary>=2.9.12
+python-dotenv>=1.0.1
+sqlalchemy>=2.0.51
+uvicorn>=0.51.0
