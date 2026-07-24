@@ -7,7 +7,7 @@ import asyncio
 
 from common.database import SessionLocal
 from common.models import Job
-from api.app.config import UPLOAD_DIR, TRANSCRIPTS_DIR, VAULT_PATH
+from common.config import UPLOAD_DIR, TRANSCRIPTS_DIR, VAULT_PATH
 from worker.transcriber import transcribe
 from worker.summarizer import load_transcript, summarize, write_to_obsidian
 from pathlib import Path

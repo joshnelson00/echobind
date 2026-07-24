@@ -10,7 +10,7 @@ from common.database import engine, get_db
 from common.models import Base, Job
 from api.app.crud import create_job
 from common.schemas import UploadResponse, JobResponse
-from api.app.config import UPLOAD_DIR
+from common.config import UPLOAD_DIR
 
 
 # Create database tables

@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
-from api.app.config import DATABASE_URL
+from common.config import DATABASE_URL
 
 
 engine = create_engine(

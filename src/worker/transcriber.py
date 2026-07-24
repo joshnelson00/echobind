@@ -1,6 +1,6 @@
 import whisper
 
-from api.app.config import WHISPER_MODEL, WHISPER_DEVICE
+from common.config import WHISPER_MODEL, WHISPER_DEVICE
 
 # Loaded once at module import time — not per job.
 model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)

@@ -4,7 +4,7 @@ import httpx
 import logging
 from pathlib import Path
 from pydantic import BaseModel, ValidationError
-from api.app.config import OLLAMA_HOST, OLLAMA_MODEL, VAULT_PATH
+from common.config import OLLAMA_HOST, OLLAMA_MODEL, VAULT_PATH
 
 # --- Chunking config -------------------------------------------------------
 # qwen3:8b at Q4 is ~5-5.5GB on an 8GB card. We keep num_ctx modest per call
