@@ -2,12 +2,19 @@ import time
 import logging
 import socket
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 
 from common.database import SessionLocal
 from common.models import Job
-from common.config import UPLOAD_DIR, TRANSCRIPTS_DIR, VAULT_PATH
+from common.config import (
+    UPLOAD_DIR,
+    TRANSCRIPTS_DIR,
+    VAULT_PATH,
+    WORKER_POLL_INTERVAL_SECONDS,
+    WORKER_HEARTBEAT_INTERVAL_SECONDS,
+    JOB_REQUEUE_TIMEOUT_MINUTES,
+)
 from worker.transcriber import transcribe
 from worker.summarizer import load_transcript, summarize, write_to_obsidian
 from pathlib import Path
@@ -16,7 +23,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 WORKER_ID = socket.gethostname()
-POLL_INTERVAL = 5
+POLL_INTERVAL = WORKER_POLL_INTERVAL_SECONDS
+HEARTBEAT_INTERVAL = WORKER_HEARTBEAT_INTERVAL_SECONDS
+REQUEUE_TIMEOUT_MINUTES = JOB_REQUEUE_TIMEOUT_MINUTES
 
 
 def get_pending_job(db):
@@ -28,7 +37,7 @@ def get_pending_job(db):
 
 def claim_job(db, job_id):
     """
-    Atomically claim a job — only succeeds if it's still pending.
+    Atomically claim the job — only succeeds if it's still pending.
     Returns the claimed Job, or None if another worker got it first.
     """
     result = db.query(Job).filter(
@@ -44,7 +53,7 @@ def claim_job(db, job_id):
     db.commit()
 
     if result == 0:
-        return None  # another worker claimed it first 
+        return None
 
     return db.query(Job).filter(Job.id == job_id).first()
 
@@ -74,20 +83,56 @@ def fail_job(db, job, error):
     db.commit()
 
 
+def heartbeat_job(db, job):
+    if HEARTBEAT_INTERVAL <= 0:
+        return
+
+    job.heartbeat_at = datetime.now()
+    db.commit()
+
+
+def requeue_stale_jobs(db, timeout_minutes: int):
+    timeout = datetime.now() - timedelta(minutes=timeout_minutes)
+
+    stale_jobs = (
+        db.query(Job)
+        .filter(
+            Job.status == "processing",
+            Job.heartbeat_at < timeout,
+        )
+        .all()
+    )
+
+    for stale_job in stale_jobs:
+        stale_job.status = "queued"
+        stale_job.claimed_by = None
+        stale_job.claimed_at = None
+        stale_job.heartbeat_at = None
+
+    if stale_jobs:
+        db.commit()
+
+    return stale_jobs
+
+
 def process_job(db, job):
     logger.info(f"Processing {job.stored_filename}")
     audio_path = UPLOAD_DIR / job.stored_filename
     base_name = job.stored_filename.rsplit(".", 1)[0]
 
+    heartbeat_job(db, job)
+
     # === Whisper transcription ===
     transcribe_start = time.time()
     result = transcribe(str(audio_path))
     transcribe_duration = time.time() - transcribe_start
+    heartbeat_job(db, job)
 
     transcript_path = TRANSCRIPTS_DIR / f"{base_name}.txt"
     transcript_path.write_text(result["text"])
     job.transcript_path = str(transcript_path)
     db.commit()
+    heartbeat_job(db, job)
 
     logger.info(
         f"Transcription done in {transcribe_duration:.2f}s "
@@ -99,10 +144,12 @@ def process_job(db, job):
     transcript = load_transcript(job.transcript_path)
     summary = asyncio.run(summarize(transcript))
     summarize_duration = time.time() - summarize_start
+    heartbeat_job(db, job)
 
     note_path = write_to_obsidian(job.stored_filename, summary, VAULT_PATH)
     job.summary_path = str(note_path)
     db.commit()
+    heartbeat_job(db, job)
 
     logger.info(
         f"Summarization done in {summarize_duration:.2f}s "
@@ -118,7 +165,6 @@ def process_job(db, job):
         f"(transcribe {transcribe_duration:.2f}s, summarize {summarize_duration:.2f}s)"
     )
 
-    
 
 def worker_loop():
     logger.info(f"Worker started: {WORKER_ID}")
@@ -128,6 +174,7 @@ def worker_loop():
         job = None
 
         try:
+            requeue_stale_jobs(db, timeout_minutes=REQUEUE_TIMEOUT_MINUTES)
             pending = get_pending_job(db)
 
             if not pending:

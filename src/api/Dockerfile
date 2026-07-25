@@ -2,7 +2,9 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
 	PYTHONUNBUFFERED=1 \
-	PIP_NO_CACHE_DIR=1
+	PIP_NO_CACHE_DIR=1 \
+	ECHOBIND_STORAGE_ROOT=/mnt/echobind-storage \
+	VAULT_PATH=/mnt/echobind-storage/obsidian-vault
 
 WORKDIR /app
 
@@ -23,4 +25,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "api.app.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn api.app.server:app --host ${API_HOST:-0.0.0.0} --port ${API_PORT:-8000}"]

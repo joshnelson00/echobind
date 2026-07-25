@@ -26,11 +26,16 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 
 # === Whisper ===
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
-WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
 
 # === API ===
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 
+# === Worker resilience ===
+WORKER_POLL_INTERVAL_SECONDS = int(os.getenv("WORKER_POLL_INTERVAL_SECONDS", "5"))
+WORKER_HEARTBEAT_INTERVAL_SECONDS = int(os.getenv("WORKER_HEARTBEAT_INTERVAL_SECONDS", "15"))
+JOB_REQUEUE_TIMEOUT_MINUTES = int(os.getenv("JOB_REQUEUE_TIMEOUT_MINUTES", "10"))
+
 # === OBSIDIAN ===
-VAULT_PATH = Path("/home/joshnelson/Documents/obsidian-vault/joshnelson-vault")
+VAULT_PATH = Path(os.getenv("VAULT_PATH", "/mnt/echobind-storage/obsidian-vault"))

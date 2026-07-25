@@ -21,6 +21,12 @@ logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a"}
 ALLOWED_CONTENT_TYPES = {
     "audio/mpeg",
