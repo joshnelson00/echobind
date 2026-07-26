@@ -216,10 +216,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-#Uploads
-src/uploads/*
-
-# Storage/DB
-src/storage/*.db
-src/storage/uploads/*
