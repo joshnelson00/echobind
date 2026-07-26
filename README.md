@@ -18,7 +18,7 @@ EchoBind runs as a distributed system across a small home cluster:
 - Laptops are treated as **intermittent compute** — they can close, sleep, and reconnect without breaking the system. Jobs left unclaimed past a timeout are requeued automatically.
 
 ## Architecture Diagram
-![Echobind Architecture](echobind-arch.png)
+![Echobind Architecture](./architecture_images/echobind-arch.png)
 
 ## Features (Planned)
 
