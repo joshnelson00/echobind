@@ -9,7 +9,7 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: raspberry.local
+    server: 100.103.64.86 # Pi's Tailscale IP — works whether laptops are on LAN or roaming
     path: /mnt/echobind-storage
 ---
 apiVersion: v1
@@ -32,7 +32,7 @@ data:
   ECHOBIND_STORAGE_ROOT: /mnt/echobind-storage
   VAULT_PATH: /mnt/echobind-storage/obsidian-vault
   DATABASE_URL: sqlite:////mnt/echobind-storage/jobs.db
-  OLLAMA_HOST: http://raspberry.local:11434
+  OLLAMA_HOST: http://100.103.64.86:11434 # Tailscale IP, same reasoning as NFS above
   OLLAMA_MODEL: qwen3:8b
   WHISPER_MODEL: base
 ---
@@ -52,24 +52,21 @@ spec:
     spec:
       automountServiceAccountToken: false
       nodeSelector:
-        kubernetes.io/hostname: raspberry.local
+        kubernetes.io/hostname: raspberrypi # matches actual node label, not raspberry.local
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: NoSchedule
       containers:
         - name: api
-          image: YOUR_DOCKERHUB_USERNAME/echobind-api:release
+          image: joshnelson00/echobind-api:release
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: echobind-config
           env:
             - name: API_HOST
-              value: 0.0.0.0
+              value: "0.0.0.0"
             - name: API_PORT
               value: "8000"
           ports:
@@ -117,11 +114,10 @@ spec:
       nodePort: 30080
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: echobind-worker
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: echobind-worker
@@ -131,11 +127,13 @@ spec:
         app: echobind-worker
     spec:
       automountServiceAccountToken: false
+      runtimeClassName: nvidia
       nodeSelector:
-        kubernetes.io/os: linux
+        role: worker
+        gpu: nvidia
       containers:
         - name: worker
-          image: YOUR_DOCKERHUB_USERNAME/echobind-worker:release
+          image: joshnelson00/echobind-worker:release
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
