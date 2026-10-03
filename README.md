@@ -54,7 +54,7 @@ EchoBind runs as a distributed system across a small home cluster:
 
 ## Project Status
 
-Currently under active development. Future development will focus on transcription processing, AI summarization, and deployment workflows.
+Currently an MVP with future plans to develop further in the automated deployment space.
 
 ## Architecture Assumptions
 
